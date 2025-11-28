@@ -1,0 +1,18 @@
+{
+    "name": "ecomaps-backend",
+    "version": "1.0.0",
+    "description": "Backend API do projeto EcoMaps",
+    "main": "src/app.js",
+    "scripts": {
+        "start": "node src/app.js",
+        "dev": "nodemon src/app.js"
+    },
+    "dependencies": {
+        "dotenv": "^17.2.3",
+        "express": "^4.19.2",
+        "mysql2": "^3.10.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.0"
+    }
+}
