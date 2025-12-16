@@ -1,3 +1,32 @@
+.login-background {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;   /* ← ESSENCIAL */
+  overflow: hidden;     /* ← ESSENCIAL */
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 8%;
+}
+
+@media (max-width: 768px) {
+  .login-background {
+    justify-content: center;
+    padding-left: 0;
+  }
+}
+
+.login-background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
 
 .container {
   width: 450px;
@@ -6,6 +35,9 @@
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
   padding: 40px;
+
+  position: relative;
+  z-index: 1;
 }
 
 .container h1 {
