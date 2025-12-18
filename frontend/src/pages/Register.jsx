@@ -20,6 +20,11 @@ function Register() {
 	async function handleSubmit(e) {
 		e.preventDefault();
 
+		if (form.senha !== form.confirmarSenha) {
+			toast.error("As senhas não coincidem");
+			return;
+		}
+
 		try {
 			const response = await fetch(
 				"http://localhost:3000/api/auth/register",
@@ -43,10 +48,12 @@ function Register() {
 
 			navigate("/login");
 
+
 		} catch (error) {
-			toast.error("Erro ao conectar com o servidor:" + error);
+			toast.error("Erro ao conectar com o servidor");
 		}
 	}
+
 
 	return (
 		<AuthLayout>
