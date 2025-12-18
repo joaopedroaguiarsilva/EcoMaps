@@ -36,9 +36,7 @@ function Register() {
 				return;
 			}
 
-			toast.success("Cadastro realizado com sucesso! 🎉");
-
-			setForm({ nome: "", email: "", senha: "" });
+			toast.success("Cadastro realizado com sucesso!");
 
 			navigate("/home");
 
