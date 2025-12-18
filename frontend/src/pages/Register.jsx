@@ -9,6 +9,8 @@ function Register() {
 	const [form, setForm] = useState({});
 	const [mostrarSenha, setMostrarSenha] = useState(false);
 
+	const navigate = useNavigate();
+
 	function handleChange(e) {
 		const { name, value } = e.target;
 		setForm((prev) => ({ ...prev, [name]: value }));
@@ -41,7 +43,7 @@ function Register() {
 			navigate("/home");
 
 		} catch (error) {
-			toast.error("Erro ao conectar com o servidor");
+			toast.error("Erro ao conectar com o servidor:" + error);
 		}
 	}
 
