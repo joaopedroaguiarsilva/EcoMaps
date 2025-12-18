@@ -45,7 +45,9 @@ function Register() {
 			}
 
 			toast.success("Cadastro realizado com sucesso!");
-			navigate("/home");
+
+			navigate("/login");
+
 
 		} catch (error) {
 			toast.error("Erro ao conectar com o servidor");
