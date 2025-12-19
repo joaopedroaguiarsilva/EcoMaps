@@ -16,7 +16,7 @@ function App() {
 		<Route path="/home" element={<Home />} />
       </Routes>
 
-      {/* 🔥 ISSO É OBRIGATÓRIO */}
+      
       <ToastContainer
         position="top-right"
         autoClose={3000}
