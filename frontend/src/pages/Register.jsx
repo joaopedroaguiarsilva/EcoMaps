@@ -51,12 +51,16 @@ function Register() {
         return;
       }
 
-      toast.success("Cadastro realizado com sucesso!");
-      navigate("/login");
-    } catch {
-      toast.error("Erro ao conectar com o servidor");
-    }
-  }
+			toast.success("Cadastro realizado com sucesso!");
+
+			navigate("/login");
+
+
+		} catch (error) {
+			toast.error("Erro ao conectar com o servidor");
+		}
+	}
+
 
   return (
     <AuthLayout>
