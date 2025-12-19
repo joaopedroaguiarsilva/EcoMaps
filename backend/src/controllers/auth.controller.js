@@ -81,6 +81,13 @@ module.exports = {
 			});
 		}
 
+		if (senha.length < 5) {
+			return res.status(400).json({
+				status: false,
+				message: 'A senha deve ter ao menos 5 caracteres'
+			});
+		}
+
 		if (senha !== confirmarSenha) {
 			return res.status(400).json({
 				status: false,
