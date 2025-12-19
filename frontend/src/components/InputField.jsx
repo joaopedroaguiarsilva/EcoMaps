@@ -6,26 +6,23 @@ function InputField({
   placeholder,
   value,
   onChange,
-  name, // 👈 RECEBE O NAME
+  name,
 }) {
   return (
     <div className="input-field">
       {Icon && <Icon className="icon icon-user" />}
 
       <input
-        name={name}        // 👈 PASSA PARA O INPUT
         type={type}
         placeholder={placeholder}
         value={value}
+        name={name}
         onChange={onChange}
         required
       />
 
       {rightIcon && (
-        <span
-          className="icon toggle-password"
-          onClick={onRightIconClick}
-        >
+        <span className="icon toggle-password" onClick={onRightIconClick}>
           {rightIcon}
         </span>
       )}

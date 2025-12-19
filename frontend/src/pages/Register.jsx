@@ -1,48 +1,55 @@
 import { useState } from "react";
 import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import InputField from "../components/InputField";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { formatCPF, isValidCPF } from "../utils/cpf";
 
 function Register() {
-	const [form, setForm] = useState({});
-	const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [form, setForm] = useState({});
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const navigate = useNavigate();
 
-	const navigate = useNavigate();
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  }
 
-	function handleChange(e) {
-		const { name, value } = e.target;
-		setForm((prev) => ({ ...prev, [name]: value }));
-	}
+  function handleCPFChange(e) {
+    const formatted = formatCPF(e.target.value);
+    setForm((prev) => ({ ...prev, cpf: formatted }));
+  }
 
-	async function handleSubmit(e) {
-		e.preventDefault();
+  async function handleSubmit(e) {
+    e.preventDefault();
 
-		if (form.senha !== form.confirmarSenha) {
-			toast.error("As senhas não coincidem");
-			return;
-		}
+    if (!isValidCPF(form.cpf)) {
+      toast.error("CPF inválido");
+      return;
+    }
 
-		try {
-			const response = await fetch(
-				"http://localhost:3000/api/auth/register",
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(form),
-				}
-			);
+    if (form.senha !== form.confirmarSenha) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
 
-			const data = await response.json();
+    try {
+      const response = await fetch(
+        "http://localhost:3000/api/auth/register",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        }
+      );
 
-			if (!response.ok) {
-				toast.error(data.message || "Erro ao realizar cadastro");
-				return;
-			}
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.message || "Erro ao realizar cadastro");
+        return;
+      }
 
 			toast.success("Cadastro realizado com sucesso!");
 
@@ -55,71 +62,70 @@ function Register() {
 	}
 
 
-	return (
-		<AuthLayout>
-			<form onSubmit={handleSubmit}>
-				<div className="brand">
-					<div className="brand-icon">🌍</div>
-					<h1>EcoMaps</h1>
-					<h2 className="login-subtitle">Criar conta</h2>
-					<p>Cadastro de usuário</p>
-				</div>
+  return (
+    <AuthLayout>
+      <form onSubmit={handleSubmit}>
+        <div className="brand">
+          <div className="brand-icon">🌍</div>
+          <h1>EcoMaps</h1>
+          <h2 className="login-subtitle">Criar conta</h2>
+          <p>Cadastro de usuário</p>
+        </div>
 
-				<InputField
-					icon={FaUser}
-					placeholder="Nome completo"
-					value={form.nome || ""}
-					onChange={handleChange}
-					name="nome"
-				/>
+        <InputField
+          icon={FaUser}
+          placeholder="Nome completo"
+          name="nome"
+          value={form.nome || ""}
+          onChange={handleChange}
+        />
 
-				<InputField
-					icon={FaEnvelope}
-					placeholder="Email"
-					value={form.email || ""}
-					onChange={handleChange}
-					name="email"
-				/>
+        <InputField
+          icon={FaEnvelope}
+          placeholder="Email"
+          name="email"
+          value={form.email || ""}
+          onChange={handleChange}
+        />
 
-				<InputField
-					icon={FaUser}
-					placeholder="CPF"
-					value={form.cpf || ""}
-					onChange={handleChange}
-					name="cpf"
-				/>
+        <InputField
+          icon={FaUser}
+          placeholder="CPF"
+          name="cpf"
+          value={form.cpf || ""}
+          onChange={handleCPFChange}
+        />
 
-				<InputField
-					icon={FaLock}
-					type={mostrarSenha ? "text" : "password"}
-					placeholder="Senha"
-					value={form.senha || ""}
-					onChange={handleChange}
-					name="senha"
-					rightIcon={mostrarSenha ? <FaEyeSlash /> : <FaEye />}
-					onRightIconClick={() => setMostrarSenha(!mostrarSenha)}
-				/>
+        <InputField
+          icon={FaLock}
+          type={mostrarSenha ? "text" : "password"}
+          placeholder="Senha"
+          name="senha"
+          value={form.senha || ""}
+          onChange={handleChange}
+          rightIcon={mostrarSenha ? <FaEyeSlash /> : <FaEye />}
+          onRightIconClick={() => setMostrarSenha(!mostrarSenha)}
+        />
 
-				<InputField
-					icon={FaLock}
-					type="password"
-					placeholder="Confirmar senha"
-					value={form.confirmarSenha || ""}
-					onChange={handleChange}
-					name="confirmarSenha"
-				/>
+        <InputField
+          icon={FaLock}
+          type="password"
+          placeholder="Confirmar senha"
+          name="confirmarSenha"
+          value={form.confirmarSenha || ""}
+          onChange={handleChange}
+        />
 
+        <button type="submit">Cadastrar</button>
 
-				<button type="submit">Cadastrar</button>
-
-				<div className="signup-link">
-					<p>
-						Já tenho conta? <Link to="/login">Entrar</Link>
-					</p>
-				</div>
-			</form>
-		</AuthLayout>
-	);
+        <div className="signup-link">
+          <p>
+            Já tenho conta? <Link to="/login">Entrar</Link>
+          </p>
+        </div>
+      </form>
+    </AuthLayout>
+  );
 }
 
 export default Register;
