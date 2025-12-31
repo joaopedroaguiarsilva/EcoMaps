@@ -61,6 +61,15 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+.admin-badge {
+  background-color: #2e7d32;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-left: 10px;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
