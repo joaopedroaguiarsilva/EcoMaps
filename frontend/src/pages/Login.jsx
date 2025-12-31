@@ -24,6 +24,9 @@ function Login() {
             );
 
             localStorage.setItem("token", data.token);
+            localStorage.setItem("cargo", data.user.CARGO_USUARIO);
+            localStorage.setItem("nome", data.user.NOME_USUARIO);
+
 
             toast.success(`Bem-vindo, ${data.user.NOME_USUARIO.trim().split(' ')[0]}!`);
 

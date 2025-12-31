@@ -1,22 +1,39 @@
-function Home() {
-    return (
-        <div style={styles.container}>
-            <h1>🌍 EcoMaps</h1>
-            <h2>Em breve...</h2>
-            <p>Você está logado.</p>
-        </div>
-    );
-}
+import MapView from "../components/MapView";
+import AdminBadge from "../components/AdminBadge";
 
-const styles = {
-    container: {
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        fontFamily: "Arial, sans-serif",
-    },
-};
+function Home() {
+  const nome = localStorage.getItem("nome");
+  const cargo = localStorage.getItem("cargo")?.toLowerCase();
+
+  return (
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      
+      {/* HEADER */}
+      <header
+        style={{
+          height: "60px",
+          backgroundColor: "#1B5E20", // verde escuro
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px",
+        }}
+      >
+        <h2>🌱 EcoMaps</h2>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span>Olá, {nome}</span>
+          {cargo === "admin" && <AdminBadge />}
+        </div>
+      </header>
+
+      {/* MAPA */}
+      <div style={{ flex: 1 }}>
+        <MapView />
+      </div>
+    </div>
+  );
+}
 
 export default Home;
