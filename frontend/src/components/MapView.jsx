@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -6,14 +7,14 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import LocalidadeModal from "./LocalidadeModal";
 
-// Limites geográficos de Sabará
+// Limites de Sabará
 const sabaraBounds = [
-  [-19.98, -43.95], // sudoeste
-  [-19.75, -43.65], // nordeste
+  [-19.98, -43.95],
+  [-19.75, -43.65],
 ];
 
-// Validação se o ponto está dentro de Sabará
 function isInsideSabara(lat, lng) {
   return (
     lat >= -19.98 &&
@@ -23,24 +24,18 @@ function isInsideSabara(lat, lng) {
   );
 }
 
-// Componente para capturar clique no mapa
-function MapClickHandler() {
+// Captura clique no mapa
+function MapClickHandler({ onValidClick }) {
   useMapEvents({
     click(e) {
       const { lat, lng } = e.latlng;
 
       if (!isInsideSabara(lat, lng)) {
-        alert("Você só pode marcar localidades dentro da cidade de Sabará.");
+        alert("Você só pode marcar localidades dentro de Sabará.");
         return;
       }
 
-      alert(
-        `Local válido em Sabará!\nLatitude: ${lat.toFixed(
-          6
-        )}\nLongitude: ${lng.toFixed(6)}`
-      );
-
-      // 🔜 Aqui depois você abre o modal de cadastro
+      onValidClick(lat, lng);
     },
   });
 
@@ -48,32 +43,41 @@ function MapClickHandler() {
 }
 
 function MapView() {
+  const [modalAberto, setModalAberto] = useState(false);
+  const [posicao, setPosicao] = useState(null);
+
+  function handleValidClick(lat, lng) {
+    setPosicao({ lat, lng });
+    setModalAberto(true);
+  }
+
   return (
-    <MapContainer
-      center={[-19.884, -43.826]}
-      zoom={13}
-      minZoom={12}
-      maxZoom={18}
-      maxBounds={sabaraBounds}
-      maxBoundsViscosity={1.0}
-      style={{ height: "100%", width: "100%" }}
-    >
-      <TileLayer
-        attribution="© OpenStreetMap"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+    <>
+      <MapContainer
+        center={[-19.884, -43.826]}
+        zoom={13}
+        minZoom={12}
+        maxZoom={18}
+        maxBounds={sabaraBounds}
+        maxBoundsViscosity={1.0}
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer
+          attribution="© OpenStreetMap"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
 
-      <MapClickHandler />
+        <MapClickHandler onValidClick={handleValidClick} />
+      </MapContainer>
 
-      {/* Exemplo de ponto */}
-      <Marker position={[-19.884, -43.826]}>
-        <Popup>
-          <strong>Ponto de coleta seletiva</strong>
-          <br />
-          Avaliação: ⭐⭐⭐⭐☆
-        </Popup>
-      </Marker>
-    </MapContainer>
+      {modalAberto && posicao && (
+        <LocalidadeModal
+          latitude={posicao.lat}
+          longitude={posicao.lng}
+          onClose={() => setModalAberto(false)}
+        />
+      )}
+    </>
   );
 }
 
