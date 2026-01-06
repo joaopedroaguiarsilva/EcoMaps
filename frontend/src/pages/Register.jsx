@@ -5,6 +5,8 @@ import AuthLayout from "../components/AuthLayout";
 import InputField from "../components/InputField";
 import { toast } from "react-toastify";
 import { formatCPF, isValidCPF } from "../utils/cpf";
+import { isValidEmail } from "../utils/email";
+
 
 function Register() {
   const [form, setForm] = useState({});
@@ -29,6 +31,12 @@ function Register() {
       return;
     }
 
+    if (!isValidEmail(form.email)) {
+      toast.error("Email inválido");
+      return;
+    }
+
+
     if (form.senha !== form.confirmarSenha) {
       toast.error("As senhas não coincidem");
       return;
@@ -51,15 +59,15 @@ function Register() {
         return;
       }
 
-			toast.success("Cadastro realizado com sucesso!");
+      toast.success("Cadastro realizado com sucesso!");
 
-			navigate("/login");
+      navigate("/login");
 
 
-		} catch (error) {
-			toast.error("Erro ao conectar com o servidor");
-		}
-	}
+    } catch (error) {
+      toast.error("Erro ao conectar com o servidor");
+    }
+  }
 
 
   return (

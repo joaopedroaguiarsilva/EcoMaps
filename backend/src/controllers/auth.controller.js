@@ -1,135 +1,169 @@
 const db = require('../db/connection');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { isValidEmail, isValidCPF } = require('../utils/validators');
 
 module.exports = {
-	login: async (req, res) => {
-		const { email, senha } = req.body;
+  // ======================
+  // LOGIN
+  // ======================
+  login: async (req, res) => {
+    let { email, senha } = req.body;
 
-		if (!email || !senha) {
-			return res.status(400).json({
-				status: false,
-				message: 'Email e senha são obrigatórios'
-			});
-		}
+    if (!email || !senha) {
+      return res.status(400).json({
+        status: false,
+        message: 'Email e senha são obrigatórios'
+      });
+    }
 
-		try {
-			const [rows] = await db.query(
-				`SELECT 
-            		CODIGO_USUARIO,
-            		NOME_USUARIO,
-            		EMAIL_USUARIO,
-            		SENHA_USUARIO,
-            		CARGO_USUARIO
-         		FROM USUARIO
-         		WHERE EMAIL_USUARIO = ?`,
-				[email]
-			);
+    // normaliza email
+    email = email.toLowerCase().trim();
 
-			if (rows.length === 0) {
-				return res.status(401).json({
-					status: false,
-					message: 'Email ou senha inválidos'
-				});
-			}
+    try {
+      const [rows] = await db.query(
+        `SELECT 
+          CODIGO_USUARIO,
+          NOME_USUARIO,
+          EMAIL_USUARIO,
+          SENHA_USUARIO,
+          CARGO_USUARIO
+        FROM USUARIO
+        WHERE EMAIL_USUARIO = ?`,
+        [email]
+      );
 
-			const usuario = rows[0];
+      if (rows.length === 0) {
+        return res.status(401).json({
+          status: false,
+          message: 'Email ou senha inválidos'
+        });
+      }
 
-			const senhaValida = await bcrypt.compare(senha, usuario.SENHA_USUARIO);
+      const usuario = rows[0];
 
-			if (!senhaValida) {
-				return res.status(401).json({
-					status: false,
-					message: 'Email ou senha inválidos'
-				});
-			}
+      const senhaValida = await bcrypt.compare(
+        senha,
+        usuario.SENHA_USUARIO
+      );
 
-			const token = jwt.sign(
-				{
-					id: usuario.CODIGO_USUARIO,
-					cargo: usuario.CARGO_USUARIO
-				},
-				process.env.JWT_SECRET || 'ecoMapsSecret',
-				{ expiresIn: '1d' }
-			);
+      if (!senhaValida) {
+        return res.status(401).json({
+          status: false,
+          message: 'Email ou senha inválidos'
+        });
+      }
 
-			delete usuario.SENHA_USUARIO;
+      const token = jwt.sign(
+        {
+          id: usuario.CODIGO_USUARIO,
+          cargo: usuario.CARGO_USUARIO
+        },
+        process.env.JWT_SECRET || 'ecoMapsSecret',
+        { expiresIn: '1d' }
+      );
 
-			return res.status(200).json({
-				status: true,
-				message: 'Login realizado com sucesso',
-				user: usuario,
-				token
-			});
+      delete usuario.SENHA_USUARIO;
 
-		} catch (error) {
-			console.error(error);
-			return res.status(500).json({
-				status: false,
-				message: 'Erro interno no servidor'
-			});
-		}
-	},
+      return res.status(200).json({
+        status: true,
+        message: 'Login realizado com sucesso',
+        user: usuario,
+        token
+      });
 
-	async register(req, res) {
-		const { nome, email, cpf, senha, confirmarSenha } = req.body;
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        status: false,
+        message: 'Erro interno no servidor'
+      });
+    }
+  },
 
-		if (!nome || !email || !cpf || !senha || !confirmarSenha) {
-			return res.status(400).json({
-				status: false,
-				message: 'Preencha todos os campos'
-			});
-		}
+  // ======================
+  // REGISTER
+  // ======================
+  register: async (req, res) => {
+    let { nome, email, cpf, senha, confirmarSenha } = req.body;
 
-		if (senha.length < 5) {
-			return res.status(400).json({
-				status: false,
-				message: 'A senha deve ter ao menos 5 caracteres'
-			});
-		}
+    if (!nome || !email || !cpf || !senha || !confirmarSenha) {
+      return res.status(400).json({
+        status: false,
+        message: 'Preencha todos os campos'
+      });
+    }
 
-		if (senha !== confirmarSenha) {
-			return res.status(400).json({
-				status: false,
-				message: 'As senhas não coincidem'
-			});
-		}
+    // normalizações
+    email = email.toLowerCase().trim();
 
-		try {
-			const [existente] = await db.query(
-				`SELECT CODIGO_USUARIO 
-			 		FROM USUARIO 
-			 	WHERE EMAIL_USUARIO = ? OR CPF_USUARIO = ?`,
-				[email, cpf]
-			);
+    // validações
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        status: false,
+        message: 'Email inválido'
+      });
+    }
 
-			if (existente.length > 0) {
-				return res.status(409).json({
-					status: false,
-					message: 'Email ou CPF já cadastrados'
-				});
-			}
+    if (!isValidCPF(cpf)) {
+      return res.status(400).json({
+        status: false,
+        message: 'CPF inválido'
+      });
+    }
 
-			const senhaHash = await bcrypt.hash(senha, 10);
+    // remove máscara do CPF (SALVA SEM FORMATAÇÃO)
+    cpf = cpf.replace(/\D/g, '');
 
-			await db.query(
-				`INSERT INTO USUARIO 
-			 		(NOME_USUARIO, EMAIL_USUARIO, CPF_USUARIO, SENHA_USUARIO, CARGO_USUARIO)
-			 		VALUES (?, ?, ?, ?, ?)`,
-				[nome, email, cpf, senhaHash, 'user']
-			);
+    if (senha.length < 5) {
+      return res.status(400).json({
+        status: false,
+        message: 'A senha deve ter ao menos 5 caracteres'
+      });
+    }
 
-			return res.status(201).json({
-				status: true,
-				message: 'Usuário cadastrado com sucesso'
-			});
+    if (senha !== confirmarSenha) {
+      return res.status(400).json({
+        status: false,
+        message: 'As senhas não coincidem'
+      });
+    }
 
-		} catch (error) {
-			console.error(error);
-			return res.status(500).json({
-				status: false,
-				message: 'Erro interno no servidor'
-			});
-		}
-	}
+    try {
+      const [existente] = await db.query(
+        `SELECT CODIGO_USUARIO
+         FROM USUARIO
+         WHERE EMAIL_USUARIO = ? OR CPF_USUARIO = ?`,
+        [email, cpf]
+      );
+
+      if (existente.length > 0) {
+        return res.status(409).json({
+          status: false,
+          message: 'Email ou CPF já cadastrados'
+        });
+      }
+
+      const senhaHash = await bcrypt.hash(senha, 10);
+
+      await db.query(
+        `INSERT INTO USUARIO
+          (NOME_USUARIO, EMAIL_USUARIO, CPF_USUARIO, SENHA_USUARIO, CARGO_USUARIO)
+         VALUES (?, ?, ?, ?, ?)`,
+        [nome, email, cpf, senhaHash, 'user']
+      );
+
+      return res.status(201).json({
+        status: true,
+        message: 'Usuário cadastrado com sucesso'
+      });
+
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        status: false,
+        message: 'Erro interno no servidor'
+      });
+    }
+  }
 };
