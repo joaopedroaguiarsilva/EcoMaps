@@ -71,7 +71,7 @@ function Login() {
                 />
 
                 <div className="recall-forget">
-                    <a href="#">Esqueci minha senha</a>
+                    <Link to="/forgot-password">Esqueci minha senha</Link>
                 </div>
 
                 <button type="submit">Entrar</button>

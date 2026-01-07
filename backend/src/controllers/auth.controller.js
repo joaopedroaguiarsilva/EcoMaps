@@ -165,5 +165,87 @@ module.exports = {
         message: 'Erro interno no servidor'
       });
     }
+  },
+
+  // ======================
+// RESET PASSWORD
+// ======================
+resetPassword: async (req, res) => {
+  let { email, cpf, senha, confirmarSenha } = req.body;
+
+  if (!email || !cpf || !senha || !confirmarSenha) {
+    return res.status(400).json({
+      status: false,
+      message: 'Preencha todos os campos'
+    });
   }
+
+  email = email.toLowerCase().trim();
+  cpf = cpf.replace(/\D/g, '');
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({
+      status: false,
+      message: 'Email inválido'
+    });
+  }
+
+  if (!isValidCPF(cpf)) {
+    return res.status(400).json({
+      status: false,
+      message: 'CPF inválido'
+    });
+  }
+
+  if (senha.length < 5) {
+    return res.status(400).json({
+      status: false,
+      message: 'A senha deve ter ao menos 5 caracteres'
+    });
+  }
+
+  if (senha !== confirmarSenha) {
+    return res.status(400).json({
+      status: false,
+      message: 'As senhas não coincidem'
+    });
+  }
+
+  try {
+    const [rows] = await db.query(
+      `SELECT CODIGO_USUARIO
+       FROM USUARIO
+       WHERE EMAIL_USUARIO = ? AND CPF_USUARIO = ?`,
+      [email, cpf]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: 'Usuário não encontrado com esses dados'
+      });
+    }
+
+    const senhaHash = await bcrypt.hash(senha, 10);
+
+    await db.query(
+      `UPDATE USUARIO
+       SET SENHA_USUARIO = ?
+       WHERE EMAIL_USUARIO = ? AND CPF_USUARIO = ?`,
+      [senhaHash, email, cpf]
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: 'Senha redefinida com sucesso'
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: false,
+      message: 'Erro interno no servidor'
+    });
+  }
+}
 };
