@@ -61,3 +61,8 @@ CREATE TABLE VOTO_LOCALIDADE (
     CONSTRAINT uq_usuario_localidade UNIQUE (CODUSUARIO_VOTO, CODLOCALIDADE_VOTO)
 );
 
+INSERT INTO TIPO_LOCALIDADE (NOME_TLOCALIDADE, DESCRICAO_TLOCALIDADE)
+VALUES
+('Parque', 'Áreas verdes, parques e trilhas'),
+('Área de Poluição', 'Locais com risco ambiental'),
+('Coleta Seletiva', 'Pontos de coleta de lixo');

@@ -24,14 +24,17 @@ function isInsideSabara(lat, lng) {
   );
 }
 
-function MapClickHandler({ onValidClick }) {
+function MapClickHandler({ onValidClick, onError }) {
   useMapEvents({
     click(e) {
       const { lat, lng } = e.latlng;
+
       if (!isInsideSabara(lat, lng)) {
-        alert("Você só pode marcar localidades dentro de Sabará.");
+        onError("Você só pode marcar localidades dentro de Sabará.");
         return;
       }
+
+      onError("");
       onValidClick(lat, lng);
     },
   });
@@ -42,6 +45,7 @@ function MapView() {
   const [modalAberto, setModalAberto] = useState(false);
   const [posicao, setPosicao] = useState(null);
   const [localidades, setLocalidades] = useState([]);
+  const [erroMapa, setErroMapa] = useState("");
 
   useEffect(() => {
     carregarLocalidades();
@@ -73,7 +77,10 @@ function MapView() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <MapClickHandler onValidClick={handleValidClick} />
+        <MapClickHandler
+          onValidClick={handleValidClick}
+          onError={setErroMapa}
+        />
 
         {localidades.map((loc) => (
           <Marker
@@ -90,19 +97,32 @@ function MapView() {
                 ⭐ {loc.RELEVANCIA ?? "0.0"} ({loc.TOTAL_VOTOS} votos)
               </p>
 
-              <button
-                onClick={() => {
-                  // aqui depois você abre modal ou navega
-                  console.log("Abrir detalhe da localidade", loc.CODIGO_LOCALIDADE);
-                }}
-              >
+              <button>
                 Ver detalhes
               </button>
             </Popup>
-
           </Marker>
         ))}
       </MapContainer>
+
+      {erroMapa && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "20px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            backgroundColor: "#d32f2f",
+            color: "#fff",
+            padding: "10px 16px",
+            borderRadius: "8px",
+            fontWeight: "bold",
+            zIndex: 1000,
+          }}
+        >
+          {erroMapa}
+        </div>
+      )}
 
       {modalAberto && posicao && (
         <LocalidadeModal
@@ -110,7 +130,7 @@ function MapView() {
           longitude={posicao.lng}
           onClose={() => {
             setModalAberto(false);
-            carregarLocalidades(); // 🔄 atualiza mapa
+            carregarLocalidades();
           }}
         />
       )}
