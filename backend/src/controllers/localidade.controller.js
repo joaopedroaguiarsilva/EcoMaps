@@ -30,59 +30,36 @@ async function criarLocalidade(req, res) {
 
     const imagem = req.file?.filename;
 
-    // ===============================
-    // VALIDAÇÕES BÁSICAS
-    // ===============================
     if (!nome || !latitude || !longitude || !imagem || !tipoLocalidade) {
-      return res.status(400).json({
-        erro: "Dados obrigatórios faltando",
-      });
+      return res.status(400).json({ erro: "Dados obrigatórios faltando" });
     }
 
     const lat = Number(latitude);
     const lng = Number(longitude);
     const tipo = Number(tipoLocalidade);
 
-    if (
-      Number.isNaN(lat) ||
-      Number.isNaN(lng) ||
-      Number.isNaN(tipo)
-    ) {
-      return res.status(400).json({
-        erro: "Latitude, longitude ou tipo inválidos",
-      });
+    if (Number.isNaN(lat) || Number.isNaN(lng) || Number.isNaN(tipo)) {
+      return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    // ===============================
-    // VALIDAÇÃO GEOGRÁFICA
-    // ===============================
     if (!isInsideSabara(lat, lng)) {
       return res.status(400).json({
         erro: "A localidade precisa estar dentro do município de Sabará.",
       });
     }
 
-    // ===============================
-    // VALIDAÇÃO DO TIPO_LOCALIDADE
-    // ===============================
     const [tipoRows] = await db.query(
       "SELECT CODIGO_TLOCALIDADE FROM TIPO_LOCALIDADE WHERE CODIGO_TLOCALIDADE = ?",
       [tipo]
     );
 
     if (!tipoRows.length) {
-      return res.status(400).json({
-        erro: "Tipo de localidade inválido",
-      });
+      return res.status(400).json({ erro: "Tipo de localidade inválido" });
     }
 
-    // ===============================
-    // INSERT NO BANCO
-    // ===============================
     await db.query(
       `
-      INSERT INTO LOCALIDADE
-      (
+      INSERT INTO LOCALIDADE (
         NOME_LOCALIDADE,
         DESCRICAO_LOCALIDADE,
         LATITUDE_LOCALIDADE,
@@ -90,8 +67,7 @@ async function criarLocalidade(req, res) {
         IMAGEM_LOCALIDADE,
         CODUSUARIO_LOCALIDADE,
         CTLOCALIDADE_LOCALIDADE
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       [
         nome,
@@ -99,57 +75,50 @@ async function criarLocalidade(req, res) {
         lat,
         lng,
         `uploads/localidades/${imagem}`,
-        usuarioId || 1, // temporário
+        usuarioId || 1,
         tipo,
       ]
     );
 
-    return res.status(201).json({
-      mensagem: "Localidade criada com sucesso",
-    });
-
+    res.status(201).json({ mensagem: "Localidade criada com sucesso" });
   } catch (error) {
-    console.error("Erro ao criar localidade:", error);
+    console.error(error);
 
-    // 🧹 REMOVE IMAGEM SE DER ERRO
     if (req.file) {
-      const imagePath = path.join(
-        __dirname,
-        "../../uploads/localidades",
-        req.file.filename
+      fs.unlink(
+        path.join(__dirname, "../../uploads/localidades", req.file.filename),
+        () => {}
       );
-
-      fs.unlink(imagePath, () => {});
     }
 
-    return res.status(500).json({
-      erro: "Erro ao criar localidade",
-    });
+    res.status(500).json({ erro: "Erro ao criar localidade" });
   }
 }
 
 // =====================================================
-// LISTAR LOCALIDADES → MAPA
+// LISTAR LOCALIDADES
 // =====================================================
 async function listarLocalidades(req, res) {
   try {
-    const [rows] = await db.query(
-      `
+    const [rows] = await db.query(`
       SELECT 
         l.CODIGO_LOCALIDADE,
         l.NOME_LOCALIDADE,
+        l.DESCRICAO_LOCALIDADE,
         l.LATITUDE_LOCALIDADE,
         l.LONGITUDE_LOCALIDADE,
         l.IMAGEM_LOCALIDADE,
+        t.NOME_TLOCALIDADE,
         COALESCE(ROUND(AVG(v.VALOR_VOTO), 1), 0) AS RELEVANCIA,
         COUNT(v.CODIGO_VOTO) AS TOTAL_VOTOS
       FROM LOCALIDADE l
+      JOIN TIPO_LOCALIDADE t 
+        ON t.CODIGO_TLOCALIDADE = l.CTLOCALIDADE_LOCALIDADE
       LEFT JOIN VOTO_LOCALIDADE v 
         ON v.CODLOCALIDADE_VOTO = l.CODIGO_LOCALIDADE
       GROUP BY l.CODIGO_LOCALIDADE
       ORDER BY l.CODIGO_LOCALIDADE DESC
-      `
-    );
+    `);
 
     res.json(rows);
   } catch (error) {
@@ -172,9 +141,14 @@ async function detalheLocalidade(req, res) {
         l.NOME_LOCALIDADE,
         l.DESCRICAO_LOCALIDADE,
         l.IMAGEM_LOCALIDADE,
+        l.LATITUDE_LOCALIDADE,
+        l.LONGITUDE_LOCALIDADE,
+        t.NOME_TLOCALIDADE,
         COALESCE(ROUND(AVG(v.VALOR_VOTO), 1), 0) AS RELEVANCIA,
         COUNT(v.CODIGO_VOTO) AS TOTAL_VOTOS
       FROM LOCALIDADE l
+      JOIN TIPO_LOCALIDADE t 
+        ON t.CODIGO_TLOCALIDADE = l.CTLOCALIDADE_LOCALIDADE
       LEFT JOIN VOTO_LOCALIDADE v 
         ON v.CODLOCALIDADE_VOTO = l.CODIGO_LOCALIDADE
       WHERE l.CODIGO_LOCALIDADE = ?
@@ -195,46 +169,10 @@ async function detalheLocalidade(req, res) {
 }
 
 // =====================================================
-// VOTAR EM LOCALIDADE
-// =====================================================
-async function votarLocalidade(req, res) {
-  try {
-    const { id } = req.params;
-    const { usuarioId, valor } = req.body;
-
-    if (!usuarioId) {
-      return res.status(400).json({ erro: "Usuário não informado" });
-    }
-
-    const nota = Number(valor);
-
-    if (!Number.isInteger(nota) || nota < 1 || nota > 5) {
-      return res.status(400).json({ erro: "Nota inválida" });
-    }
-
-    await db.query(
-      `
-      INSERT INTO VOTO_LOCALIDADE 
-        (CODUSUARIO_VOTO, CODLOCALIDADE_VOTO, VALOR_VOTO)
-      VALUES (?, ?, ?)
-      ON DUPLICATE KEY UPDATE VALOR_VOTO = ?
-      `,
-      [usuarioId, id, nota, nota]
-    );
-
-    res.json({ mensagem: "Voto registrado com sucesso" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ erro: "Erro ao votar" });
-  }
-}
-
-// ===============================
 // EXPORTS
-// ===============================
+// =====================================================
 module.exports = {
   criarLocalidade,
   listarLocalidades,
   detalheLocalidade,
-  votarLocalidade,
 };

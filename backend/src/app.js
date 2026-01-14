@@ -3,16 +3,13 @@ const cors = require("cors");
 const path = require("path");
 
 const app = express();
-const routes = require("./routes"); // index.js na pasta routes
+const routes = require("./routes");
 
 app.use(cors());
 app.use(express.json());
 
-// Servir imagens de localidades (rota: /uploads/...)
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "..", "uploads"))
-);
+// Servir imagens (OBRIGATÓRIO pro frontend)
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // API routes
 app.use("/api", routes);

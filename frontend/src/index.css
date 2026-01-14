@@ -82,3 +82,36 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.map-legend {
+  user-select: none;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  padding: 12px 14px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+  font-size: 14px;
+  color: #222; /* 👈 ISSO RESOLVE */
+}
+
+.map-legend h4 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+}
+
+.map-legend div {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.map-legend span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
