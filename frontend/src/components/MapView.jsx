@@ -4,16 +4,30 @@ import {
   TileLayer,
   Marker,
   Popup,
+  Tooltip,
   useMapEvents,
 } from "react-leaflet";
 import axios from "axios";
 import LocalidadeModal from "./LocalidadeModal";
+import LocalidadeDetailsModal from "./LocalidadeDetailsModal";
+import MapLegend from "./MapLegend";
 import "leaflet/dist/leaflet.css";
+import { iconsByCategoria } from "../utils/mapIcons";
+
+/* ===== CONFIG ===== */
 
 const sabaraBounds = [
   [-19.98, -43.95],
   [-19.75, -43.65],
 ];
+
+const categoriaMap = {
+  1: "Parque",
+  2: "Área de Poluição",
+  3: "Coleta Seletiva",
+};
+
+/* ===== HELPERS ===== */
 
 function isInsideSabara(lat, lng) {
   return (
@@ -38,14 +52,18 @@ function MapClickHandler({ onValidClick, onError }) {
       onValidClick(lat, lng);
     },
   });
+
   return null;
 }
+
+/* ===== COMPONENT ===== */
 
 function MapView() {
   const [modalAberto, setModalAberto] = useState(false);
   const [posicao, setPosicao] = useState(null);
   const [localidades, setLocalidades] = useState([]);
   const [erroMapa, setErroMapa] = useState("");
+  const [localidadeSelecionada, setLocalidadeSelecionada] = useState(null);
 
   useEffect(() => {
     carregarLocalidades();
@@ -82,40 +100,81 @@ function MapView() {
           onError={setErroMapa}
         />
 
-        {localidades.map((loc) => (
-          <Marker
-            key={loc.CODIGO_LOCALIDADE}
-            position={[
-              loc.LATITUDE_LOCALIDADE,
-              loc.LONGITUDE_LOCALIDADE,
-            ]}
-          >
-            <Popup>
-              <strong>{loc.NOME_LOCALIDADE}</strong>
+        {localidades.map((loc) => {
+          const categoriaNome = loc.NOME_TLOCALIDADE?.trim() || "Parque";
 
-              <p style={{ margin: "6px 0" }}>
-                ⭐ {loc.RELEVANCIA ?? "0.0"} ({loc.TOTAL_VOTOS} votos)
-              </p>
+          return (
+            <Marker
+              key={loc.CODIGO_LOCALIDADE}
+              position={[loc.LATITUDE_LOCALIDADE, loc.LONGITUDE_LOCALIDADE]}
+              icon={iconsByCategoria[categoriaNome] ?? iconsByCategoria["Parque"]}
+            >
 
-              <button>
-                Ver detalhes
-              </button>
-            </Popup>
-          </Marker>
-        ))}
+              {/* HOVER */}
+              <Tooltip direction="top" offset={[0, -20]} opacity={1}>
+                <div style={{ width: 180 }}>
+                  <img
+                    src={`http://localhost:3000/${loc.IMAGEM_LOCALIDADE}`}
+                    alt={loc.NOME_LOCALIDADE}
+                    style={{
+                      width: "100%",
+                      height: 100,
+                      objectFit: "cover",
+                      borderRadius: 6,
+                      marginBottom: 6,
+                    }}
+                  />
+                  <strong style={{ display: "block", wordWrap: "break-word" }}>
+                    {loc.NOME_LOCALIDADE}
+                  </strong>
+
+                  <div style={{ fontSize: 12, color: "#555" }}>
+                    ⭐ {loc.RELEVANCIA ?? "0.0"}
+                  </div>
+                </div>
+              </Tooltip>
+
+              {/* CLICK */}
+              <Popup>
+                <strong>{loc.NOME_LOCALIDADE}</strong>
+
+                <p style={{ margin: "6px 0" }}>
+                  ⭐ {loc.RELEVANCIA ?? "0.0"} ({loc.TOTAL_VOTOS} votos)
+                </p>
+
+                <button
+                  onClick={() => setLocalidadeSelecionada(loc)}
+                  style={{
+                    marginTop: 8,
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    border: "none",
+                    background: "#1976d2",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  Ver detalhes
+                </button>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
+
+      <MapLegend />
 
       {erroMapa && (
         <div
           style={{
             position: "absolute",
-            bottom: "20px",
+            bottom: 20,
             left: "50%",
             transform: "translateX(-50%)",
             backgroundColor: "#d32f2f",
             color: "#fff",
             padding: "10px 16px",
-            borderRadius: "8px",
+            borderRadius: 8,
             fontWeight: "bold",
             zIndex: 1000,
           }}
@@ -132,6 +191,13 @@ function MapView() {
             setModalAberto(false);
             carregarLocalidades();
           }}
+        />
+      )}
+
+      {localidadeSelecionada && (
+        <LocalidadeDetailsModal
+          localidade={localidadeSelecionada}
+          onClose={() => setLocalidadeSelecionada(null)}
         />
       )}
     </>
