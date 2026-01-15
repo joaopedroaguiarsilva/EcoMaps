@@ -16,4 +16,6 @@ router.post(
   localidadeController.criarLocalidade
 );
 
+router.post('/vote', localidadeController.votarLocalidade);
+
 module.exports = router;

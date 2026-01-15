@@ -31,13 +31,14 @@ function LocalidadeModal({ latitude, longitude, onClose }) {
       setLoading(true);
 
       const formData = new FormData();
+
       formData.append("nome", nome);
       formData.append("descricao", descricao);
       formData.append("latitude", latitude);
       formData.append("longitude", longitude);
       formData.append("tipoLocalidade", tipoLocalidade);
       formData.append("imagem", imagem);
-      formData.append("usuarioId", 1);
+      formData.append("usuarioId", localStorage.getItem("usuarioId"));
 
       await axios.post("http://localhost:3000/api/localidades", formData, {
         headers: { "Content-Type": "multipart/form-data" },
