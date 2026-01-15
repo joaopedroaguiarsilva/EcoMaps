@@ -24,6 +24,7 @@ function Login() {
             );
 
             localStorage.setItem("token", data.token);
+            localStorage.setItem("usuarioId", data.user.CODIGO_USUARIO);
             localStorage.setItem("cargo", data.user.CARGO_USUARIO);
             localStorage.setItem("nome", data.user.NOME_USUARIO);
 
