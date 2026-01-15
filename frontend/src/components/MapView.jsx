@@ -132,10 +132,17 @@ function MapView() {
                                         {loc.NOME_LOCALIDADE}
                                     </strong>
 
-                                    <div style={{ fontSize: 12, color: "#555" }}>
-                                        <div style={{ fontSize: 12, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
-                                            <FaArrowUp /> {loc.SCORE ?? 0}
-                                        </div>
+                                    <div
+                                        style={{
+                                            fontSize: 12,
+                                            color: "#555",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 4,
+                                        }}
+                                    >
+                                        <FaArrowUp />
+                                        {loc.SCORE ?? 0} votos
                                     </div>
                                 </div>
                             </Tooltip>
@@ -169,9 +176,9 @@ function MapView() {
                     );
                 })}
             </MapContainer>
-      
+
             <UserCount />
-      <MapLegend />
+            <MapLegend />
 
             {erroMapa && (
                 <div
