@@ -13,20 +13,19 @@ import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import buffer from "@turf/buffer";
 import { point } from "@turf/helpers";
 import axios from "axios";
-
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import LocalidadeModal from "./LocalidadeModal";
 import LocalidadeDetailsModal from "./LocalidadeDetailsModal";
 import MapLegend from "./MapLegend";
 import UserCount from "./UserCount";
-import { iconsByCategoria } from "../utils/mapIcons";
+import { iconsByCategoria, userLocationIcon } from "../utils/mapIcons";
 
 import "leaflet/dist/leaflet.css";
 
-/* ===== CONFIG ===== */
-
 const sabaraBounds = [
-    [-19.98, -43.95],
-    [-19.75, -43.65],
+    [-20.00, -44.00],
+    [-19.67, -43.60],
 ];
 
 /* ===== HELPERS ===== */
@@ -47,7 +46,7 @@ function MapClickHandler({ geoJson, onValidClick, onError }) {
             const { lat, lng } = e.latlng;
 
             if (!isInsideSabara(lat, lng, geoJson)) {
-                onError("Você só pode marcar localidades dentro de Sabará (com tolerância de 100m).");
+                onError("Você só pode marcar localidades dentro de Sabará.");
                 return;
             }
 
@@ -68,6 +67,8 @@ function MapView() {
     const [erroMapa, setErroMapa] = useState("");
     const [localidadeSelecionada, setLocalidadeSelecionada] = useState(null);
     const [sabaraGeoJson, setSabaraGeoJson] = useState(null);
+    const [userLocation, setUserLocation] = useState(null);
+    const [mapCenter, setMapCenter] = useState([-19.884, -43.826]);
 
     /* ===== LOADERS ===== */
 
@@ -96,10 +97,57 @@ function MapView() {
         setModalAberto(true);
     }
 
+    function isInsideSabaraBounds(lat, lng) {
+        return (
+            lat >= sabaraBounds[0][0] &&
+            lat <= sabaraBounds[1][0] &&
+            lng >= sabaraBounds[0][1] &&
+            lng <= sabaraBounds[1][1]
+        );
+    }
+
+    useEffect(() => {
+        if (!navigator.geolocation) {
+            toast.warn("Geolocalização não é suportada pelo seu navegador.");
+            return;
+        }
+    
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+    
+                setUserLocation({ lat: latitude, lng: longitude });
+    
+                if (isInsideSabaraBounds(latitude, longitude)) {
+                    setMapCenter([latitude, longitude]);
+                } else {
+                    toast.info(
+                        "Sua localização atual não está em Sabará. O mapa foi centralizado na cidade."
+                    );
+                }
+            },
+            () => {
+                toast.warn("Não foi possível obter sua localização.");
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+            }
+        );
+    }, []);
+
     return (
         <>
+            <ToastContainer
+                position="top-center"
+                autoClose={4000}
+                hideProgressBar={false}
+                closeOnClick
+                pauseOnHover
+            />
+
             <MapContainer
-                center={[-19.884, -43.826]}
+                center={mapCenter}
                 zoom={13}
                 minZoom={12}
                 maxZoom={18}
@@ -131,8 +179,6 @@ function MapView() {
                     />
                 )}
 
-
-                {/* MARCADORES */}
                 {localidades.map((loc) => {
                     const categoriaNome =
                         loc.NOME_TLOCALIDADE?.trim() || "Parque";
@@ -145,8 +191,8 @@ function MapView() {
                                 loc.LONGITUDE_LOCALIDADE,
                             ]}
                             icon={
-                                iconsByCategoria[categoriaNome] ??
-                                iconsByCategoria["Parque"]
+                              iconsByCategoria[categoriaNome] ||
+                              iconsByCategoria["default"]
                             }
                         >
                             {/* HOVER */}
@@ -230,6 +276,15 @@ function MapView() {
                         </Marker>
                     );
                 })}
+
+                {userLocation && (
+                  <Marker
+                    position={[userLocation.lat, userLocation.lng]}
+                    icon={userLocationIcon}
+                  >
+                    <Popup>Você está aqui</Popup>
+                  </Marker>
+                )}
             </MapContainer>
 
             <UserCount />
