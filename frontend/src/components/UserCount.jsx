@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { FaUsers } from "react-icons/fa";
 
 function UserCount() {
     const [total, setTotal] = useState(null);
@@ -18,10 +19,25 @@ function UserCount() {
     }, []);
 
     return (
-        <div className="user-count">
-            👥 {total !== null ? `${formatNumber(total)} usuários` : "Carregando..."}
+        <div className="user-count" style={styles.container}>
+            <FaUsers style={styles.icon} />
+            {total !== null ? `${formatNumber(total)} usuários` : "Carregando..."}
         </div>
     );
 }
+
+const styles = {
+    container: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        color: "#222",
+        fontSize: 14,
+        fontWeight: 500,
+    },
+    icon: {
+        fontSize: 16,
+    },
+};
 
 export default UserCount;
