@@ -13,6 +13,7 @@ import LocalidadeDetailsModal from "./LocalidadeDetailsModal";
 import MapLegend from "./MapLegend";
 import "leaflet/dist/leaflet.css";
 import { iconsByCategoria } from "../utils/mapIcons";
+import UserCount from "./UserCount";
 
 /* ===== CONFIG ===== */
 
@@ -161,7 +162,8 @@ function MapView() {
           );
         })}
       </MapContainer>
-
+      
+      <UserCount />
       <MapLegend />
 
       {erroMapa && (
