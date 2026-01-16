@@ -1,5 +1,6 @@
 import MapView from "../components/MapView";
 import AdminBadge from "../components/AdminBadge";
+import MapFilters from "../components/MapFilters";
 
 function Home() {
   const nome = localStorage.getItem("nome");
@@ -7,22 +8,18 @@ function Home() {
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      
       {/* HEADER */}
-      <header
-        style={{
-          height: "60px",
-          backgroundColor: "#1B5E20", // verde escuro
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px",
-        }}
-      >
-        <h2>🌱 EcoMaps</h2>
+      <header className="app-header">
+        <div className="header-left">
+          <h2>🌱 EcoMaps</h2>
+        </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {/* filtros ficam no centro do header */}
+        <div className="header-filters">
+          <MapFilters />
+        </div>
+
+        <div className="header-right">
           <span>Olá, {nome}</span>
           {cargo === "admin" && <AdminBadge />}
         </div>

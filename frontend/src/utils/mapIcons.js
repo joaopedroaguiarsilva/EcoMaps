@@ -13,8 +13,26 @@ function createIcon(color) {
 }
 
 export const iconsByCategoria = {
-  "Parque": createIcon("green"),
+  Parque: createIcon("green"),
   "Área de Poluição": createIcon("red"),
   "Coleta Seletiva": createIcon("blue"),
 };
- 
+
+/**
+ * Normaliza qualquer texto de categoria vindo do backend
+ */
+export function normalizeCategoria(nome) {
+  if (!nome) return "Parque";
+
+  const n = nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+  if (n.includes("polu")) return "Área de Poluição";
+  if (n.includes("coleta")) return "Coleta Seletiva";
+  if (n.includes("parque")) return "Parque";
+
+  return "Parque";
+}
