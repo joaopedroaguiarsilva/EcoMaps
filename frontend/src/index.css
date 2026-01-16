@@ -131,3 +131,104 @@ button:focus-visible {
   color: #222;
   white-space: nowrap;
 }
+
+/* HEADER geral */
+.app-header {
+  height: 64px;
+  background: linear-gradient(90deg, #1b5e20, #2e7d32);
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+}
+
+/* left/center/right */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+/* coloca filtros centralizados e com largura limitada */
+.header-filters {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* right */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 180px;
+  justify-content: flex-end;
+}
+
+/* override: o MapFilters interno */
+.header-filters .header-filters {
+  top: unset;
+  left: unset;
+  transform: none;
+  position: relative;
+}
+
+/* filtro pill (melhor contraste) */
+.header-filters .filter-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.16);
+  min-width: 260px;
+  border: 1px solid rgba(0,0,0,0.6); /* borda fina preta para contraste conforme você pediu */
+  margin: 0 8px;
+}
+
+/* ícones e inputs */
+.header-filters .filter-icon {
+  color: #1b5e20;
+  font-size: 14px;
+}
+
+.header-filters input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: transparent;
+  color: #222;
+  width: 220px;
+}
+
+.header-filters input::placeholder {
+  color: #888;
+}
+
+/* botão buscar */
+.header-filters .btn-ghost {
+  background: #1b5e20;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* select estilo */
+.header-filters .filter-select {
+  border-radius: 999px;
+  border: none;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #222;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.16);
+  background: white;
+}
+

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaArrowUp } from "react-icons/fa";
 import {
     MapContainer,
@@ -50,16 +50,32 @@ function MapClickHandler({ geoJson, onValidClick, onError }) {
                 return;
             }
 
-            onError("");
-            onValidClick(lat, lng);
-        },
-    });
+      onError("");
+      onValidClick(lat, lng);
+    },
+  });
 
-    return null;
+  return null;
+}
+
+/* 🔴 NORMALIZA CATEGORIA (CORREÇÃO REAL DO BUG) */
+function normalizeCategoria(nome) {
+  if (!nome) return "Parque";
+
+  const n = nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+  if (n.includes("polu")) return "Área de Poluição";
+  if (n.includes("coleta")) return "Coleta Seletiva";
+  if (n.includes("parque")) return "Parque";
+
+  return "Parque";
 }
 
 /* ===== COMPONENT ===== */
-
 function MapView() {
     const [modalAberto, setModalAberto] = useState(false);
     const [posicao, setPosicao] = useState(null);
@@ -96,6 +112,23 @@ function MapView() {
         setPosicao({ lat, lng });
         setModalAberto(true);
     }
+  }
+
+  /* busca endereço (Nominatim) */
+  async function buscarEndereco(endereco) {
+    if (!endereco) return;
+
+    try {
+      const res = await axios.get(
+        "https://nominatim.openstreetmap.org/search",
+        {
+          params: {
+            q: `${endereco}, Sabará, MG`,
+            format: "json",
+            limit: 1,
+          },
+        }
+      );
 
     function isInsideSabaraBounds(lat, lng) {
         return (
@@ -290,47 +323,98 @@ function MapView() {
             <UserCount />
             <MapLegend />
 
-            {erroMapa && (
-                <div
+                  <div
                     style={{
-                        position: "absolute",
-                        bottom: 20,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        backgroundColor: "#d32f2f",
-                        color: "#fff",
-                        padding: "10px 16px",
-                        borderRadius: 8,
-                        fontWeight: "bold",
-                        zIndex: 1000,
+                      fontSize: 12,
+                      color: "#555",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
                     }}
-                >
-                    {erroMapa}
+                  >
+                    <FaArrowUp /> {loc.SCORE ?? 0} votos
+                  </div>
                 </div>
-            )}
+              </Tooltip>
 
-            {modalAberto && posicao && (
-                <LocalidadeModal
-                    latitude={posicao.lat}
-                    longitude={posicao.lng}
-                    onClose={() => {
-                        setModalAberto(false);
-                        carregarLocalidades();
-                    }}
-                />
-            )}
+              <Popup>
+                <strong>{loc.NOME_LOCALIDADE}</strong>
 
-            {localidadeSelecionada && (
-                <LocalidadeDetailsModal
-                    localidade={localidadeSelecionada}
-                    onClose={() => {
-                        setLocalidadeSelecionada(null);
-                        carregarLocalidades();
-                    }}
-                />
-            )}
-        </>
-    );
+                <p style={{ margin: "6px 0" }}>
+                  <FaArrowUp /> {loc.SCORE ?? 0}
+                  <br />
+                  <span style={{ fontSize: 12, color: "#777" }}>
+                    {loc.TOTAL_VOTOS ?? 0} votos
+                  </span>
+                </p>
+
+                <button
+                  onClick={() => setLocalidadeSelecionada(loc)}
+                  style={{
+                    marginTop: 8,
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    border: "none",
+                    background: "#1976d2",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  Ver detalhes
+                </button>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
+
+      {/* UI fixa */}
+      <UserCount />
+      <MapLegend />
+
+      {/* Erro */}
+      {erroMapa && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 20,
+            left: "50%",
+            transform: "translateX(-50%)",
+            backgroundColor: "#d32f2f",
+            color: "#fff",
+            padding: "10px 16px",
+            borderRadius: 8,
+            fontWeight: "bold",
+            zIndex: 1000,
+          }}
+        >
+          {erroMapa}
+        </div>
+      )}
+
+      {/* Modais */}
+      {modalAberto && posicao && (
+        <LocalidadeModal
+          latitude={posicao.lat}
+          longitude={posicao.lng}
+          onClose={() => {
+            setModalAberto(false);
+            carregarLocalidades();
+          }}
+        />
+      )}
+
+      {localidadeSelecionada && (
+        <LocalidadeDetailsModal
+          localidade={localidadeSelecionada}
+          onClose={() => {
+            setLocalidadeSelecionada(null);
+            carregarLocalidades();
+          }}
+        />
+      )}
+    </>
+  );
 }
 
 export default MapView;
