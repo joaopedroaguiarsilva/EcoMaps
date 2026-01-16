@@ -1,38 +1,24 @@
 import L from "leaflet";
 
-function createIcon(color) {
+const iconSize = [36, 36];
+const iconAnchor = [18, 36];
+const popupAnchor = [0, -36];
+
+function createIcon(iconUrl) {
   return new L.Icon({
-    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
-    shadowUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
+    iconUrl,
+    iconSize,
+    iconAnchor,
+    popupAnchor,
   });
 }
 
 export const iconsByCategoria = {
-  Parque: createIcon("green"),
-  "Área de Poluição": createIcon("red"),
-  "Coleta Seletiva": createIcon("blue"),
+  "Parque": createIcon("/map-icons/parque.svg"),
+  "Área de Poluição": createIcon("/map-icons/problema.svg"),
+  "Coleta Seletiva": createIcon("/map-icons/coleta.svg"),
+
+  default: createIcon("/map-icons/parque.svg"),
 };
 
-/**
- * Normaliza qualquer texto de categoria vindo do backend
- */
-export function normalizeCategoria(nome) {
-  if (!nome) return "Parque";
-
-  const n = nome
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-
-  if (n.includes("polu")) return "Área de Poluição";
-  if (n.includes("coleta")) return "Coleta Seletiva";
-  if (n.includes("parque")) return "Parque";
-
-  return "Parque";
-}
+export const userLocationIcon = createIcon("/map-icons/usuario.svg");

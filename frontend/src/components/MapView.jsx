@@ -1,43 +1,54 @@
 import { useEffect, useRef, useState } from "react";
 import { FaArrowUp } from "react-icons/fa";
 import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Tooltip,
-  useMapEvents,
+    MapContainer,
+    TileLayer,
+    Marker,
+    Popup,
+    Tooltip,
+    useMapEvents,
+    GeoJSON,
 } from "react-leaflet";
+import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
+import buffer from "@turf/buffer";
+import { point } from "@turf/helpers";
 import axios from "axios";
-
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import LocalidadeModal from "./LocalidadeModal";
 import LocalidadeDetailsModal from "./LocalidadeDetailsModal";
 import MapLegend from "./MapLegend";
 import UserCount from "./UserCount";
+import { iconsByCategoria, userLocationIcon } from "../utils/mapIcons";
 
 import "leaflet/dist/leaflet.css";
-import { iconsByCategoria } from "../utils/mapIcons";
 
-/* ===== CONFIG ===== */
 const sabaraBounds = [
-  [-19.98, -43.95],
-  [-19.75, -43.65],
+    [-20.00, -44.00],
+    [-19.67, -43.60],
 ];
 
 /* ===== HELPERS ===== */
-function isInsideSabara(lat, lng) {
-  return lat >= -19.98 && lat <= -19.75 && lng >= -43.95 && lng <= -43.65;
+
+function isInsideSabara(lat, lng, geoJson) {
+    const pt = point([lng, lat]);
+
+    const bufferedPolygon = buffer(geoJson, 0.3, {
+        units: "kilometers",
+    });
+
+    return booleanPointInPolygon(pt, bufferedPolygon);
 }
 
-function MapClickHandler({ onValidClick, onError }) {
-  useMapEvents({
-    click(e) {
-      const { lat, lng } = e.latlng;
+function MapClickHandler({ geoJson, onValidClick, onError }) {
+    useMapEvents({
+        click(e) {
+            const { lat, lng } = e.latlng;
 
-      if (!isInsideSabara(lat, lng)) {
-        onError("Você só pode marcar localidades dentro de Sabará.");
-        return;
-      }
+            if (!isInsideSabara(lat, lng, geoJson)) {
+                onError("Você só pode marcar localidades dentro de Sabará.");
+                return;
+            }
 
       onError("");
       onValidClick(lat, lng);
@@ -66,60 +77,40 @@ function normalizeCategoria(nome) {
 
 /* ===== COMPONENT ===== */
 function MapView() {
-  const mapRef = useRef(null);
+    const [modalAberto, setModalAberto] = useState(false);
+    const [posicao, setPosicao] = useState(null);
+    const [localidades, setLocalidades] = useState([]);
+    const [erroMapa, setErroMapa] = useState("");
+    const [localidadeSelecionada, setLocalidadeSelecionada] = useState(null);
+    const [sabaraGeoJson, setSabaraGeoJson] = useState(null);
+    const [userLocation, setUserLocation] = useState(null);
+    const [mapCenter, setMapCenter] = useState([-19.884, -43.826]);
 
-  const [modalAberto, setModalAberto] = useState(false);
-  const [posicao, setPosicao] = useState(null);
-  const [localidades, setLocalidades] = useState([]);
-  const [erroMapa, setErroMapa] = useState("");
-  const [localidadeSelecionada, setLocalidadeSelecionada] = useState(null);
+    /* ===== LOADERS ===== */
 
-  const [filtros, setFiltros] = useState({
-    nome: "",
-    categoria: "",
-    endereco: "",
-  });
+    useEffect(() => {
+        carregarLocalidades();
+        carregarGeoJson();
+    }, []);
 
-  /* recarrega ao mudar nome ou categoria */
-  useEffect(() => {
-    carregarLocalidades();
-  }, [filtros.nome, filtros.categoria]);
-
-  /* escuta filtros do header */
-  useEffect(() => {
-    function onFilters(e) {
-      console.log("[MapView] mapFilters event:", e.detail);
-      setFiltros((prev) => ({ ...prev, ...e.detail }));
-
-      if (e.detail.endereco) {
-        buscarEndereco(e.detail.endereco);
-      }
+    async function carregarLocalidades() {
+        const res = await axios.get("http://localhost:3000/api/localidades");
+        setLocalidades(res.data);
     }
 
-    window.addEventListener("mapFilters", onFilters);
-    return () => window.removeEventListener("mapFilters", onFilters);
-  }, []);
+    async function carregarGeoJson() {
+        try {
+            const res = await fetch("/sabara.geojson"); // arquivo em /public
+            const data = await res.json();
+            setSabaraGeoJson(data);
+        } catch (err) {
+            console.error("Erro ao carregar GeoJSON:", err);
+        }
+    }
 
-  async function carregarLocalidades() {
-    try {
-      const params = {};
-      if (filtros.nome) params.nome = filtros.nome;
-      if (filtros.categoria) params.categoria = filtros.categoria;
-
-      console.log("[MapView] carregando localidades com params:", params);
-
-      const res = await axios.get("http://localhost:3000/api/localidades", {
-        params,
-      });
-
-      console.log(
-        "[MapView] localidades recebidas:",
-        res.data?.length || 0
-      );
-
-      setLocalidades(res.data || []);
-    } catch (error) {
-      console.error("[MapView] erro ao carregar localidades", error);
+    function handleValidClick(lat, lng) {
+        setPosicao({ lat, lng });
+        setModalAberto(true);
     }
   }
 
@@ -139,85 +130,198 @@ function MapView() {
         }
       );
 
-      if (res.data?.length && mapRef.current) {
-        const { lat, lon } = res.data[0];
-        mapRef.current.setView([+lat, +lon], 16, { animate: true });
-      }
-    } catch (error) {
-      console.error("[MapView] erro buscarEndereco:", error);
+    function isInsideSabaraBounds(lat, lng) {
+        return (
+            lat >= sabaraBounds[0][0] &&
+            lat <= sabaraBounds[1][0] &&
+            lng >= sabaraBounds[0][1] &&
+            lng <= sabaraBounds[1][1]
+        );
     }
-  }
 
-  function handleValidClick(lat, lng) {
-    setPosicao({ lat, lng });
-    setModalAberto(true);
-  }
+    useEffect(() => {
+        if (!navigator.geolocation) {
+            toast.warn("Geolocalização não é suportada pelo seu navegador.");
+            return;
+        }
+    
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+    
+                setUserLocation({ lat: latitude, lng: longitude });
+    
+                if (isInsideSabaraBounds(latitude, longitude)) {
+                    setMapCenter([latitude, longitude]);
+                } else {
+                    toast.info(
+                        "Sua localização atual não está em Sabará. O mapa foi centralizado na cidade."
+                    );
+                }
+            },
+            () => {
+                toast.warn("Não foi possível obter sua localização.");
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+            }
+        );
+    }, []);
 
-  return (
-    <>
-      {/* 🗺 MAPA */}
-      <MapContainer
-        center={[-19.884, -43.826]}
-        zoom={13}
-        minZoom={12}
-        maxZoom={18}
-        maxBounds={sabaraBounds}
-        maxBoundsViscosity={1.0}
-        style={{ height: "100%", width: "100%" }}
-        whenCreated={(map) => (mapRef.current = map)}
-      >
-        <TileLayer
-          attribution="© OpenStreetMap"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+    return (
+        <>
+            <ToastContainer
+                position="top-center"
+                autoClose={4000}
+                hideProgressBar={false}
+                closeOnClick
+                pauseOnHover
+            />
 
-        <MapClickHandler
-          onValidClick={handleValidClick}
-          onError={setErroMapa}
-        />
-
-        {localidades.map((loc) => {
-          const categoriaCanonica = normalizeCategoria(
-            loc.NOME_TLOCALIDADE
-          );
-
-          const icon =
-            iconsByCategoria[categoriaCanonica] ||
-            iconsByCategoria["Parque"];
-
-
-          console.log({
-            nomeLocalidade: loc.NOME_LOCALIDADE,
-            nomeTipo: loc.NOME_TLOCALIDADE,
-            tipoRaw: typeof loc.NOME_TLOCALIDADE,
-          });
-
-          return (
-            <Marker
-              key={loc.CODIGO_LOCALIDADE}
-              position={[
-                loc.LATITUDE_LOCALIDADE,
-                loc.LONGITUDE_LOCALIDADE,
-              ]}
-              icon={icon}
+            <MapContainer
+                center={mapCenter}
+                zoom={13}
+                minZoom={12}
+                maxZoom={18}
+                style={{ height: "100%", width: "100%" }}
+                maxBounds={sabaraBounds}
             >
-              <Tooltip direction="top" offset={[0, -20]} opacity={1}>
-                <div style={{ width: 200 }}>
-                  <img
-                    src={`http://localhost:3000/${loc.IMAGEM_LOCALIDADE}`}
-                    alt={loc.NOME_LOCALIDADE}
-                    style={{
-                      width: "100%",
-                      height: 100,
-                      objectFit: "cover",
-                      borderRadius: 6,
-                      marginBottom: 6,
-                    }}
-                  />
+                <TileLayer
+                    attribution="© OpenStreetMap"
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
 
-                  <strong style={{ display: "block" }}>
-                    {loc.NOME_LOCALIDADE}
-                  </strong>
+                <MapClickHandler
+                    geoJson={sabaraGeoJson}
+                    onValidClick={handleValidClick}
+                    onError={setErroMapa}
+                />
+
+                {/* LIMITE DE SABARÁ */}
+                {sabaraGeoJson && (
+                    <GeoJSON
+                    data={buffer(sabaraGeoJson, 0.3, { units: "kilometers" })}
+                        interactive={false}
+                        style={{
+                            color: "#1976d2",
+                            weight: 2,
+                            fillColor: "#1976d2",
+                            fillOpacity: 0.08,
+                        }}
+                    />
+                )}
+
+                {localidades.map((loc) => {
+                    const categoriaNome =
+                        loc.NOME_TLOCALIDADE?.trim() || "Parque";
+
+                    return (
+                        <Marker
+                            key={loc.CODIGO_LOCALIDADE}
+                            position={[
+                                loc.LATITUDE_LOCALIDADE,
+                                loc.LONGITUDE_LOCALIDADE,
+                            ]}
+                            icon={
+                              iconsByCategoria[categoriaNome] ||
+                              iconsByCategoria["default"]
+                            }
+                        >
+                            {/* HOVER */}
+                            <Tooltip
+                                direction="top"
+                                offset={[0, -20]}
+                                opacity={1}
+                            >
+                                <div style={{ width: 180 }}>
+                                    <img
+                                        src={`http://localhost:3000/${loc.IMAGEM_LOCALIDADE}`}
+                                        alt={loc.NOME_LOCALIDADE}
+                                        style={{
+                                            width: "100%",
+                                            height: 100,
+                                            objectFit: "cover",
+                                            borderRadius: 6,
+                                            marginBottom: 6,
+                                        }}
+                                    />
+
+                                    <strong
+                                        style={{
+                                            display: "block",
+                                            wordWrap: "break-word",
+                                        }}
+                                    >
+                                        {loc.NOME_LOCALIDADE}
+                                    </strong>
+
+                                    <div
+                                        style={{
+                                            fontSize: 12,
+                                            color: "#555",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 4,
+                                        }}
+                                    >
+                                        <FaArrowUp /> {loc.SCORE ?? 0}
+                                    </div>
+                                </div>
+                            </Tooltip>
+
+                            {/* CLICK */}
+                            <Popup>
+                                <strong>{loc.NOME_LOCALIDADE}</strong>
+
+                                <p style={{ margin: "6px 0" }}>
+                                    <span
+                                        style={{
+                                            fontSize: 12,
+                                            color: "#555",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 4,
+                                        }}
+                                    >
+                                        <FaArrowUp /> {loc.SCORE ?? 0}
+                                    </span>
+                                    ({loc.TOTAL_VOTOS} votos)
+                                </p>
+
+                                <button
+                                    onClick={() =>
+                                        setLocalidadeSelecionada(loc)
+                                    }
+                                    style={{
+                                        marginTop: 8,
+                                        padding: "6px 10px",
+                                        borderRadius: 6,
+                                        border: "none",
+                                        background: "#1976d2",
+                                        color: "#fff",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    Ver detalhes
+                                </button>
+                            </Popup>
+                        </Marker>
+                    );
+                })}
+
+                {userLocation && (
+                  <Marker
+                    position={[userLocation.lat, userLocation.lng]}
+                    icon={userLocationIcon}
+                  >
+                    <Popup>Você está aqui</Popup>
+                  </Marker>
+                )}
+            </MapContainer>
+
+            <UserCount />
+            <MapLegend />
 
                   <div
                     style={{
