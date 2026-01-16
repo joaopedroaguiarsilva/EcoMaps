@@ -1,5 +1,6 @@
 import MapView from "../components/MapView";
 import AdminBadge from "../components/AdminBadge";
+import MapFilters from "../components/MapFilters";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -40,6 +41,10 @@ function Home() {
 					/>
 					EcoMaps
 				</h2>
+
+				<div className="header-filters">
+					<MapFilters />
+        		</div>
 
 				<div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
 					<span>Olá, {nome}</span>
